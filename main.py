@@ -2,6 +2,8 @@ import sys
 import os
 import threading
 import subprocess
+import webbrowser
+import platform
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, 
                              QWidget, QLabel, QTextEdit, QPushButton, QDialog, 
                              QLineEdit, QFrame, QMessageBox, QProgressBar)
@@ -10,6 +12,155 @@ from PyQt5.QtGui import QFont, QClipboard
 
 from RuleBased import RuleBased
 from LLMBased import LLMBased
+
+class OllamaInstallDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Ollama Installation Required")
+        self.setFixedSize(500, 250)
+        self.setModal(True)
+        
+        # Center the dialog
+        if parent:
+            parent_geo = parent.geometry()
+            x = parent_geo.x() + (parent_geo.width() - 500) // 2
+            y = parent_geo.y() + (parent_geo.height() - 250) // 2
+            self.move(x, y)
+        
+        layout = QVBoxLayout()
+        layout.setSpacing(15)
+        layout.setContentsMargins(20, 20, 20, 20)
+        
+        # Title
+        title = QLabel("Ollama Not Found")
+        title.setFont(QFont("Arial", 16, QFont.Bold))
+        title.setAlignment(Qt.AlignCenter)
+        layout.addWidget(title)
+        
+        # Description
+        description = QLabel(
+            "This application requires Ollama to run LLM-based processing.\n\n"
+            "Ollama is a free tool that runs large language models locally on your computer.\n"
+            "Would you like to download and install it now?"
+        )
+        description.setFont(QFont("Arial", 11))
+        description.setWordWrap(True)
+        description.setAlignment(Qt.AlignCenter)
+        layout.addWidget(description)
+        
+        # Button layout
+        button_layout = QHBoxLayout()
+        
+        # Install button
+        self.install_button = QPushButton("Download Ollama")
+        self.install_button.setStyleSheet("""
+            QPushButton {
+                background-color: #4CAF50;
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                font-weight: bold;
+                border-radius: 5px;
+                font-size: 12px;
+            }
+            QPushButton:hover {
+                background-color: #45a049;
+            }
+        """)
+        self.install_button.clicked.connect(self.download_ollama)
+        button_layout.addWidget(self.install_button)
+        
+        # Already installed button
+        already_installed_button = QPushButton("Already Installed")
+        already_installed_button.setStyleSheet("""
+            QPushButton {
+                background-color: #2196F3;
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                font-weight: bold;
+                border-radius: 5px;
+                font-size: 12px;
+            }
+            QPushButton:hover {
+                background-color: #0b7dda;
+            }
+        """)
+        already_installed_button.clicked.connect(self.accept)
+        button_layout.addWidget(already_installed_button)
+        
+        # Skip button
+        skip_button = QPushButton("Skip for Now")
+        skip_button.setStyleSheet("""
+            QPushButton {
+                background-color: #f44336;
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                font-weight: bold;
+                border-radius: 5px;
+                font-size: 12px;
+            }
+            QPushButton:hover {
+                background-color: #da190b;
+            }
+        """)
+        skip_button.clicked.connect(self.accept)
+        button_layout.addWidget(skip_button)
+        
+        layout.addLayout(button_layout)
+        
+        # Note
+        note = QLabel("Note: You can still use Rule-based processing without Ollama.")
+        note.setFont(QFont("Arial", 9))
+        note.setStyleSheet("color: #666; font-style: italic;")
+        note.setAlignment(Qt.AlignCenter)
+        layout.addWidget(note)
+        
+        self.setLayout(layout)
+    
+    def download_ollama(self):
+        """Open the appropriate Ollama download page based on OS"""
+        system = platform.system().lower()
+        
+        if system == "darwin":  # macOS
+            url = "https://ollama.ai/download/mac"
+        elif system == "windows":
+            url = "https://ollama.ai/download/windows"
+        elif system == "linux":
+            url = "https://ollama.ai/download/linux"
+        else:
+            url = "https://ollama.ai/download"
+        
+        try:
+            webbrowser.open(url)
+            QMessageBox.information(
+                self, 
+                "Download Started", 
+                f"Ollama download page opened in your browser.\n\n"
+                f"After installation, restart this application to use LLM features."
+            )
+        except Exception as e:
+            QMessageBox.warning(
+                self, 
+                "Error", 
+                f"Could not open browser. Please visit ollama.ai manually.\n\nError: {str(e)}"
+            )
+        
+        self.accept()
+
+def check_ollama_installed():
+    """Check if Ollama is installed and accessible"""
+    try:
+        result = subprocess.run(
+            ["ollama", "--version"], 
+            capture_output=True, 
+            text=True, 
+            timeout=5
+        )
+        return result.returncode == 0
+    except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
+        return False
 
 class OllamaThread(QThread):
     finished = pyqtSignal(str)
@@ -147,8 +298,17 @@ class CaselistMaker(QMainWindow):
         self.ollama_thread = None
         self.init_ui()
         
-        # Start Ollama model pull in background
-        QTimer.singleShot(2000, self.start_ollama_pull)
+        # Check for Ollama installation and show dialog if needed
+        QTimer.singleShot(500, self.check_ollama_on_startup)
+    
+    def check_ollama_on_startup(self):
+        """Check if Ollama is installed and show installation dialog if not"""
+        if not check_ollama_installed():
+            dialog = OllamaInstallDialog(self)
+            dialog.exec_()
+        else:
+            # Start Ollama model pull in background if Ollama is available
+            QTimer.singleShot(1500, self.start_ollama_pull)
     
     def init_ui(self):
         self.setWindowTitle("Caselist Maker - Debate Disclosure Processor")
@@ -331,6 +491,15 @@ class CaselistMaker(QMainWindow):
             self.result_display.setText("Please enter some text.")
             return
         
+        # Check if Ollama is available
+        if not check_ollama_installed():
+            self.result_display.setText(
+                "Ollama is not installed or not accessible.\n\n"
+                "Please install Ollama from ollama.ai to use LLM-based processing.\n"
+                "You can use Rule-based processing in the meantime."
+            )
+            return
+        
         # Disable button during processing
         self.llm_button.setText("Processing...")
         self.llm_button.setEnabled(False)
@@ -387,8 +556,9 @@ def main():
     # macOS compatibility
     if sys.platform == "darwin":
         os.environ['OBJC_DISABLE_INITIALIZE_FORK_SAFETY'] = 'YES'
-        # Fix PyQt5 plugin path issue on macOS
-        os.environ['QT_QPA_PLATFORM_PLUGIN_PATH'] = ''
+    
+    # Fix Qt platform plugin issues
+    os.environ.pop('QT_QPA_PLATFORM_PLUGIN_PATH', None)
     
     app = QApplication(sys.argv)
     app.setStyle('Fusion')  # Modern look
