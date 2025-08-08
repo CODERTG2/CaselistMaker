@@ -158,7 +158,7 @@ def check_ollama_installed():
             text=True, 
             timeout=5
         )
-        return result.returncode == 0
+        return False
     except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
         return False
 
