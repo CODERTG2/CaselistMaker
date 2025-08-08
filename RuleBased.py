@@ -30,6 +30,4 @@ class RuleBased:
                 position = position.replace("---", " ").replace("--", " ").replace("-", " ").replace(":", " ").replace("   ", " ").strip()
                 all_positions[position.lower()] = position
         unique_positions = list(all_positions.values())
-
-        print(unique_positions)
         return '\n'.join(unique_positions)
