@@ -2,6 +2,17 @@
 
 A comprehensive Python application for processing and extracting negative positions from debate team disclosures. This tool helps debate coaches and students organize and clean up caselist data by extracting individual positions from formatted disclosure text.
 
+## 📥 Download
+
+Get started quickly with our ready-to-use installers:
+
+| Platform | Download | Requirements |
+|----------|----------|--------------|
+| 🪟 **Windows** | [CaselistMaker-Setup-v1.0.0.exe](./installers/CaselistMaker-Setup-v1.0.0.exe) | Windows 10+ |
+| 🍎 **macOS** | [CaselistMaker.dmg](./installers/CaselistMaker.dmg) | macOS 10.14+ |
+
+*No Python installation required for the installers above.*
+
 ## Features
 
 ### Core Processing
