@@ -1,26 +1,32 @@
+import sys
+import os
+
+if sys.platform == "darwin":
+    os.environ['OBJC_DISABLE_INITIALIZE_FORK_SAFETY'] = 'YES'
+
 from tkinter import *
 import customtkinter
-import subprocess
+# import subprocess
 from RuleBased import RuleBased
-from LLMBased import LLMBased
+# from LLMBased import LLMBased
+# import threading
 
-try:
-    subprocess.run(["ollama", "pull", "llama3.2"], check=True)
-   
-except subprocess.CalledProcessError as e:
-    print(f"Command failed with exit code {e.returncode}")
-    print(f"Error output: {e.stderr}")
+# def ollama_pull():
+#     try:
+#         subprocess.run(["ollama", "pull", "llama3.2"], check=True)
+    
+#     except subprocess.CalledProcessError as e:
+#         print(f"Command failed with exit code {e.returncode}")
+#         print(f"Error output: {e.stderr}")
 
 root = customtkinter.CTk()
 root.title("Caselist Maker")
 root.geometry("600x600")
 
-
-algo = None
 result_text = ""
 
 rule_algo = RuleBased("")
-llm_algo = LLMBased("")
+# llm_algo = LLMBased("")
 
 header_frame = customtkinter.CTkFrame(master=root, fg_color="transparent")
 header_frame.pack(fill="x", padx=20, pady=10)
@@ -43,6 +49,16 @@ def open_settings():
         font=customtkinter.CTkFont(size=18, weight="bold")
     )
     settings_title.pack(pady=20)
+
+    def save_regex_pattern(pattern):
+        rule_algo.regex_pattern = pattern
+        regex_save_button.configure(text="Saved!")
+        settings_window.after(2000, lambda: regex_save_button.configure(text="Save Regex"))
+    
+    # def save_llm_prompt(prompt):
+    #     llm_algo.prompt = prompt
+    #     prompt_save_button.configure(text="Saved!")
+    #     settings_window.after(2000, lambda: prompt_save_button.configure(text="Save Prompt"))
     
     regex_frame = customtkinter.CTkFrame(master=settings_window)
     regex_frame.pack(fill="x", padx=20, pady=10)
@@ -66,38 +82,28 @@ def open_settings():
     )
     regex_save_button.pack(padx=10, pady=(0, 10))
     
-    # LLM Prompt Section
-    prompt_frame = customtkinter.CTkFrame(master=settings_window)
-    prompt_frame.pack(fill="both", expand=True, padx=20, pady=10)
+    # # LLM Prompt Section
+    # prompt_frame = customtkinter.CTkFrame(master=settings_window)
+    # prompt_frame.pack(fill="both", expand=True, padx=20, pady=10)
     
-    prompt_label = customtkinter.CTkLabel(
-        master=prompt_frame, 
-        text="LLM Prompt Template:", 
-        font=customtkinter.CTkFont(size=14, weight="bold")
-    )
-    prompt_label.pack(anchor="w", padx=10, pady=(10, 5))
+    # prompt_label = customtkinter.CTkLabel(
+    #     master=prompt_frame, 
+    #     text="LLM Prompt Template:", 
+    #     font=customtkinter.CTkFont(size=14, weight="bold")
+    # )
+    # prompt_label.pack(anchor="w", padx=10, pady=(10, 5))
     
-    prompt_textbox = customtkinter.CTkTextbox(master=prompt_frame, width=450, height=150)
-    prompt_textbox.pack(padx=10, pady=(0, 5), fill="both", expand=True)
-    prompt_textbox.insert("1.0", llm_algo.prompt)
+    # prompt_textbox = customtkinter.CTkTextbox(master=prompt_frame, width=450, height=150)
+    # prompt_textbox.pack(padx=10, pady=(0, 5), fill="both", expand=True)
+    # prompt_textbox.insert("1.0", llm_algo.prompt)
     
-    prompt_save_button = customtkinter.CTkButton(
-        master=prompt_frame, 
-        text="Save Prompt", 
-        command=lambda: save_llm_prompt(prompt_textbox.get("1.0", "end-1c")),
-        width=100
-    )
-    prompt_save_button.pack(padx=10, pady=(0, 10))
-    
-    def save_regex_pattern(pattern):
-        rule_algo.regex_pattern = pattern
-        regex_save_button.configure(text="Saved!")
-        settings_window.after(2000, lambda: regex_save_button.configure(text="Save Regex"))
-    
-    def save_llm_prompt(prompt):
-        llm_algo.prompt = prompt
-        prompt_save_button.configure(text="Saved!")
-        settings_window.after(2000, lambda: prompt_save_button.configure(text="Save Prompt"))
+    # prompt_save_button = customtkinter.CTkButton(
+    #     master=prompt_frame, 
+    #     text="Save Prompt", 
+    #     command=lambda: save_llm_prompt(prompt_textbox.get("1.0", "end-1c")),
+    #     width=100
+    # )
+    # prompt_save_button.pack(padx=10, pady=(0, 10))
 
 settings_button = customtkinter.CTkButton(
     master=header_frame, 
@@ -147,20 +153,20 @@ def run_rule_based():
         
 
 def run_llm_based():
-    global llm_algo, result_text
-    text = text_input.get("1.0", "end-1c")
-    if not text.strip():
-        result_display.delete("1.0", "end")
-        result_display.insert("1.0", "Please enter some text.")
-        return
+    # global llm_algo, result_text
+    # text = text_input.get("1.0", "end-1c")
+    # if not text.strip():
+    #     result_display.delete("1.0", "end")
+    #     result_display.insert("1.0", "Please enter some text.")
+    #     return
 
     result_display.delete("1.0", "end")
-    result_display.insert("1.0", "Processing with LLM... Please wait.")
+    result_display.insert("1.0", "LLM functionality temporarily disabled")
     
-    llm_algo.disclosure = text
-    result_text = llm_algo.process()
-    result_display.delete("1.0", "end")
-    result_display.insert("1.0", result_text)
+    # llm_algo.disclosure = text
+    # result_text = llm_algo.process()
+    # result_display.delete("1.0", "end")
+    # result_display.insert("1.0", result_text)
 
 rule_button = customtkinter.CTkButton(master=button_frame, text="Rule-based", command=run_rule_based)
 rule_button.pack(side=RIGHT, padx=5)
@@ -180,6 +186,11 @@ def copy_result():
 
 copy_button = customtkinter.CTkButton(master=root, text="Copy Result", command=copy_result, width=120)
 copy_button.pack(pady=10)
+
+# def start_ollama_thread():
+#     threading.Thread(target=ollama_pull, daemon=True).start()
+
+# root.after(2000, threading.Thread(target=ollama_pull).start())
 
 if __name__ == "__main__":
     root.mainloop()
